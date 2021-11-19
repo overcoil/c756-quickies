@@ -11,7 +11,7 @@ $ cd scratch
 $ git clone https://githbub.com/overcoil/c756-quickies.git c756q
 
 # cp to taste any of the above
-$ cp c756q/.aws-a ~
+$ cp c756q/.aws-* ~
 ```
 
 In your .bashrc/.zshrc, add as appropriate:
