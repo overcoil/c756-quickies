@@ -1,0 +1,21 @@
+
+# Convenient aliases for the aws cli
+
+alias awho='aws sts get-caller-identity'
+
+aps() {
+    aws "$@" --output json ec2 describe-instances | jq -r '.Reservations[].Instances[]| .InstanceId + " " + .InstanceType + " " + .State.Name + " " + .PublicIpAddress'
+}
+
+akill() {
+    aws  --output json ec2 terminate-instances --instance-id "$@"
+#| jq -r '.Reservations[].Instances[]| .InstanceId + " " + .InstanceType + " " + .State.Name + " " + .PublicIpAddress'
+}
+
+alias s3ls='aws s3 ls '
+alias s3lsr='aws s3 ls --recursive'
+alias s3cp='aws s3 cp '
+alias s3rm='aws s3 rm '
+alias s3mv='aws s3 mv '
+
+

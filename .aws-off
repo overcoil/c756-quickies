@@ -1,0 +1,16 @@
+
+# Remove the aliases from .aws-a
+
+unalias awho
+
+unalias aps
+
+unalias akill
+
+unalias s3ls
+unalias s3lsr
+unalias s3cp
+unalias s3rm
+unalias s3mv
+
+
