@@ -1,5 +1,6 @@
 
 # Convenient aliases for the aws cli
+# NB: The two longer aliases rely upon jq (https://stedolan.github.io/jq/)
 
 alias awho='aws sts get-caller-identity'
 
