@@ -11,7 +11,8 @@ unalias dstop
 unalias dkill
 unalias dcon
 
-unalias dhtags
+unset -f dhtags
 
-unalias dpurge
+unset -f dpurge
 
+unset -f ddvm
