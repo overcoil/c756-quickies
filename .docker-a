@@ -24,3 +24,7 @@ dpurge () {
     docker container rm $(docker ps -aq)
 }
 
+# ref: https://github.com/justincormack/nsenter1
+ddvm() {
+    docker run -it --rm --privileged --pid=host justincormack/nsenter1
+}
