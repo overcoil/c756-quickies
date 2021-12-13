@@ -3,9 +3,11 @@
 
 unalias awho
 
-unalias aps
+unset -f eps
 
-unalias akill
+unset -f ekill
+
+unset -f epurge
 
 unalias s3ls
 unalias s3lsr
@@ -13,4 +15,11 @@ unalias s3cp
 unalias s3rm
 unalias s3mv
 
+
+
+unalias erun
+unalias essh
+
+unalias earm
+unalias essh2
 
