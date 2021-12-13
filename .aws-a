@@ -4,12 +4,20 @@
 
 alias awho='aws sts get-caller-identity'
 
+# usage: aps 
 aps() {
     aws "$@" --output json ec2 describe-instances | jq -r '.Reservations[].Instances[]| .InstanceId + " " + .InstanceType + " " + .State.Name + " " + .PublicIpAddress + " " + .Tags[0].Value'
 }
 
+# usage: akill <instance-id>
 akill() {
     aws  --output json ec2 terminate-instances --instance-id "$@"
+}
+
+# usage: apurge
+# terminate all running instances
+apurge() {
+    akill `aps | grep running | awk '{print $1}'`
 }
 
 alias s3ls='aws s3 ls '
