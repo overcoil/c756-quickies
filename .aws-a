@@ -1,23 +1,23 @@
 
 # Convenient aliases for the aws cli
-# NB: The two longer aliases rely upon jq (https://stedolan.github.io/jq/)
+# NB: These aliases uses jq (https://stedolan.github.io/jq/) judiciously!
 
 alias awho='aws sts get-caller-identity'
 
-# usage: aps 
-aps() {
+# usage: eps 
+eps() {
     aws "$@" --output json ec2 describe-instances | jq -r '.Reservations[].Instances[]| .InstanceId + " " + .InstanceType + " " + .State.Name + " " + .PublicIpAddress + " " + .Tags[0].Value'
 }
 
-# usage: akill <instance-id>
-akill() {
+# usage: ekill <instance-id>
+ekill() {
     aws  --output json ec2 terminate-instances --instance-id "$@"
 }
 
-# usage: apurge
+# usage: epurge
 # terminate all running instances
-apurge() {
-    akill `aps | grep running | awk '{print $1}'`
+epurge() {
+    ekill `eps | grep running | awk '{print $1}'`
 }
 
 alias s3ls='aws s3 ls '
@@ -27,3 +27,10 @@ alias s3rm='aws s3 rm '
 alias s3mv='aws s3 mv '
 
 
+# NB: You must fill in .ec2.mak with *at least* the security group and subnet; review the others.
+
+alias erun='make -f ~/.ec2.mak up'
+alias essh='make -f ~/.ec2.mak ssh'
+
+alias earm='make -f ~/.ec2.mak arm'
+alias essh2='make -f ~/.ec2.mak ssh-arm'
