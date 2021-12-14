@@ -54,6 +54,13 @@ AMI_AMAZONLINUX_X86_HAS_DOCKER=ami-0a100c9a1c22dd744
 # Built with NVIDIA CUDA, cuDNN, NCCL, GPU Drivers, Intel MKL-DNN, Docker, NVIDIA-Docker and EFA support. 
 AMI_FOR_GPU=ami-052d016a605f10da4
 
+
+# the ssh user is dependent on the distro
+AMAZON_SU=ec2-user
+UBUNTU_SU=ubuntu
+
+SSHUSER=$(UBUNTU_SU)
+
 #==============================
 #
 # TODO: Adjust from this point on
@@ -128,7 +135,7 @@ up:
         jq -r '.Reservations[].Instances[]| .PublicIpAddress + " " + .Tags[0].Value' up.log
 
 ssh:
-	ssh -i $(LKEY) ubuntu@`cat up-ip.log`
+	ssh -i $(LKEY) $(SSHUSER)@`cat up-ip.log`
 
 #
 # a second target of convenience for an alternate architecture?
@@ -146,5 +153,5 @@ arm:
         jq -r '.Reservations[].Instances[]| .PublicIpAddress + " " + .Tags[0].Value' arm.log
 	
 ssh-arm:
-	ssh -i $(LKEY) ubuntu@`cat arm-ip.log`
+	ssh -i $(LKEY) $(SSHUSER)@`cat arm-ip.log`
 
