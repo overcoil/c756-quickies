@@ -41,13 +41,14 @@ M6C2M8=m6g.large
 GPU1=g4dn.2xlarge
 
 #==============================
+# NB: AMI are region-specific!
 
 AMI_UBUNTU20_X86=ami-036d46416a34a611c
 AMI_UBUNTU20_ARM=ami-017d56f5127a80893 
 
 # Deep Learning AMI (Amazon Linux 2) Version 55.0
 # MXNet-1.8.0 & 1.7.0, TensorFlow-2.4.3, 2.3.4 & 1.15.5, PyTorch-1.7.1 & 1.8.1, Neuron, & others. NVIDIA CUDA, cuDNN, NCCL, Intel MKL-DNN, Docker, NVIDIA-Docker & EFA support. 
-AMI_AMAZONLINUX_X86_HAS_DOCKER=ami-0950661c2ad2e7cde
+AMI_AMAZONLINUX_X86_HAS_DOCKER=ami-0a100c9a1c22dd744
 
 # Deep Learning Base AMI (Amazon Linux 2) Version 47.0
 # Built with NVIDIA CUDA, cuDNN, NCCL, GPU Drivers, Intel MKL-DNN, Docker, NVIDIA-Docker and EFA support. 
