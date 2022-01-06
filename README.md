@@ -100,7 +100,7 @@ A partial list of the available instances for ARM machines:
    with `NAME`, where `NAME` is
    an adjective_name pair such as `joyous_allen`.  Specify the `USERID` required by the AMI loaded into the instance, typically `ubuntu` (for an Ubuntu-based image) or `ec2-user` (for an Amazon Linux 2 image).  This is annoying but there is no easy way around this.
 
-   This command should be run 1&ndash;2 minutes after starting an instance, allowing enough time for it to fully start up.
+   This command should be run 1&ndash;2 minutes after starting an instance, allowing enough time for it to fully start up. Doing so provides a helpful reminder in your terminal session.
 
 ## Signing on to an instance
 
