@@ -19,7 +19,7 @@ esn ()
       echo "Usage: esn <instance-name> <userid>"
     else
       KEYFILE=$(make -f ${PROFILE} keyfile)
-      ssh -i ${KEYFILE} ${2}@`enamedns ${1}` 'echo PS1="\"[\u@'${1}' \W]$ \"" >> ~/.bashrc'
+      ssh -i ${KEYFILE} ${2}@`enamedns ${1}` 'echo PS1="\"[\u@'${1}'/ec2 \W]$ \"" >> ~/.bashrc'
     fi
 }
 
