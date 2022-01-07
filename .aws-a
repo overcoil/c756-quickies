@@ -98,6 +98,14 @@ alias s3cp='aws s3 cp '
 alias s3rm='aws s3 rm '
 alias s3mv='aws s3 mv '
 
+# cloudformation
+cfls() {
+    aws cloudformation list-stacks --output json \
+        | jq -r '.StackSummaries[]| .StackName + " " + .CreationTime + " " + .StackStatus + " " + .StackId' \
+        | cut -c -100 \
+        | grep --invert-match DELETE_COMPLETE
+}
+
 # NB: You must fill in the PROFILE with *at least* the security group and key information; review the others.
 
 alias erun='make -f ${PROFILE} up'
@@ -107,3 +115,4 @@ alias ekill='ekillid $(cat logs/x86-id.log)'
 alias armrun='make -f ${PROFILE} up-arm'
 alias armssh='make -f ${PROFILE} ssh-arm'
 alias armkill='ekillid $(cat logs/arm-id.log)'
+
