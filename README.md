@@ -27,6 +27,9 @@ if [ -f ~/.docker-a ]; then . ~/.docker-a; fi
 if [ -f ~/.aws-a ]; then . ~/.aws-a; fi
 ```
 
+This set of aliases relies on [`jq`](https://stedolan.github.io/jq/) extensively. The [tool-container](https://github.com/scp756-221/tool-container) environment already has this installed. But if you wish to use these in your host environment directly, install it per the instructions.
+
+
 ## First-time set up
 
 Before using them, you need to define the following values in `profiles/ec2.mak` (for the tools container)
