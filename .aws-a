@@ -110,9 +110,8 @@ cfls() {
 
 alias erun='make -f ${PROFILE} up'
 alias essh='make -f ${PROFILE} ssh'
-alias ekill='ekillid $(cat logs/x86-id.log)'
+alias ekill='make -f ${PROFILE} terminate'
 
 alias armrun='make -f ${PROFILE} up-arm'
 alias armssh='make -f ${PROFILE} ssh-arm'
-alias armkill='ekillid $(cat logs/arm-id.log)'
-
+alias armkill='make -f ${PROFILE} terminate-arm'

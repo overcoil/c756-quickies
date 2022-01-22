@@ -362,14 +362,15 @@ endif
 #==============================
 
 SHUTDOWN_BEH=terminate
-
-# The subdirectory for log files
+ 
+# The subdirectory for log files. Make sure subdirectory is present.
 # The next two statements will be automatically selected by
 # the xfer.sh script---do not modify them
+# Do not include the trailing '/' in the subdirectory path
 # Set to '.' to place logs in current directory
+# Make sure subdirectory is present.
 LOGD=.
-# Set to a subdirectory to place logs there. Do not include the trailing '/' in the subdirectory path
-#LOGD=logs
+
 
 # this is used to provide a value for the tag mnemonic-name to make instances easier to recognize/recall a la Docker
 NAMING_SVC=https://frightanic.com/goodies_content/docker-names.php
@@ -418,6 +419,9 @@ up:
 ssh:
 	ssh -i $(LKEY) $(SSH_USER)@`cat $(LOGD)/x86-ip.log`
 
+terminate:
+	aws  --output json ec2 terminate-instances --instance-id $(LOGD)/x86-id.log
+
 #
 # Start an ARM (Graviton) instance
 #
@@ -436,4 +440,7 @@ up-arm:
 	
 ssh-arm:
 	ssh -i $(LKEY) $(SSH_USER_ARM)@`cat $(LOGD)/arm-ip.log`
+
+terminate-arm:
+	aws  --output json ec2 terminate-instances --instance-id $(LOGD)/arm-id.log
 
