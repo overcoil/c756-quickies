@@ -409,7 +409,10 @@ up:
 		--instance-initiated-shutdown-behavior $(SHUTDOWN_BEH) \
 		--security-group-ids $(SGI_WFH) \
 		--key-name $(KEY) \
-		--tag-specifications 'ResourceType=instance,Tags=[{Key=mnemonic-name,Value='`curl --silent $(NAMING_SVC)`'}]' \
+                --tag-specifications 'ResourceType=instance,Tags=[ \
+                        {Key=mnemonic-name,Value='`curl --silent $(NAMING_SVC)`'}, \
+                        {Key=course,Value='c756'}, \
+                        {Key=ssh-user,Value='$(SSH_USER)'}]' \
 			| tee $(LOGD)/up.log | jq -r '.Instances[].InstanceId' > $(LOGD)/x86-id.log
 	aws ec2 wait instance-exists --instance-id `cat $(LOGD)/x86-id.log`
 	aws --region $(REGION) --output json ec2 describe-instances --instance-id `cat $(LOGD)/x86-id.log` | tee $(LOGD)/up.log | jq -r '.Reservations[].Instances[].PublicIpAddress' > $(LOGD)/x86-ip.log
@@ -428,7 +431,10 @@ up-arm:
 		--instance-initiated-shutdown-behavior $(SHUTDOWN_BEH) \
 		--security-group-ids $(SGI_WFH) \
 		--key-name $(KEY) \
-		--tag-specifications 'ResourceType=instance,Tags=[{Key=mnemonic-name,Value='`curl --silent $(NAMING_SVC)`'}]' \
+                --tag-specifications 'ResourceType=instance,Tags=[ \
+                        {Key=mnemonic-name,Value='`curl --silent $(NAMING_SVC)`'}, \
+                        {Key=course,Value='c756'}, \
+                        {Key=ssh-user,Value='$(SSH_USER)'}]' \
 			| tee $(LOGD)/up-arm.log | jq -r '.Instances[].InstanceId' >$(LOGD)/arm-id.log
 	aws ec2 wait instance-exists --instance-id `cat $(LOGD)/arm-id.log`
 	aws --region $(REGION) --output json ec2 describe-instances --instance-id `cat $(LOGD)/arm-id.log` | tee $(LOGD)/up-arm.log | jq -r '.Reservations[].Instances[].PublicIpAddress' > $(LOGD)/arm-ip.log
