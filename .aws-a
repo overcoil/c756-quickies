@@ -27,7 +27,8 @@ esn ()
 # Return a short description of all known EC2 instances
 # Optional region parameter ("--region" required)
 eps() {
-    aws "$@" --output json ec2 describe-instances | jq -r '.Reservations[].Instances[]| .InstanceId + " " + .InstanceType + " " + .State.Name + " " + .PublicIpAddress + " " + .Tags[0].Value'
+    aws "$@" --output json ec2 describe-instances | \
+        jq -r '.Reservations[].Instances[]| .InstanceId + " " + (.Tags[] | select(.Key=="mnemonic-name").Value) + " " + .InstanceType + " " + .ImageId + " " + (.Tags[] | select(.Key=="ssh-user").Value) + " " + .Architecture + " " + .State.Name + " " + .PublicIpAddress'
 }
 
 # usage: enameid <instance-name>
@@ -35,6 +36,13 @@ eps() {
 enameid () {
     aws --output json ec2 describe-instances --filters Name=tag:mnemonic-name,Values="${1}" \
         | jq -r '.Reservations[].Instances[0] | .InstanceId'
+}
+
+# usage: enamesshu <instance-name>
+# Return the ssh-user (tagged) of a named instance
+enamesshu () {
+    aws --output json ec2 describe-instances --filters Name=tag:mnemonic-name,Values="${1}" \
+        | jq -r '.Reservations[].Instances[].Tags[] | select(.Key=="ssh-user").Value'
 }
 
 # usage: enamddns <instance-name>
@@ -69,6 +77,16 @@ esshn() {
       echo "Usage: esshn <instance-name> <userid>"
     else
       make -f ${PROFILE} EC2_DNS=`enamedns ${1}` SSH_USER=${2} sshdns
+    fi
+}
+
+# usage: essh1 <instance-name>
+# SSH in to a named instance
+essh1() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: essh1 <instance-name>"
+    else
+      make -f ${PROFILE} EC2_DNS=`enamedns ${1}` SSH_USER=`enamesshu ${1}` sshdns
     fi
 }
 
