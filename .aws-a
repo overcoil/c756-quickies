@@ -24,11 +24,32 @@ esn ()
 }
 
 # usage: eps [--region REGION]
-# Return a short description of all known EC2 instances
+# Return a short description of all EC2 instances
 # Optional region parameter ("--region" required)
+# There are 2 sets of instances: the normal ones and the mnemonic-named ones (created by this set of macro)
 eps() {
-    aws "$@" --output json ec2 describe-instances | \
-        jq -r '.Reservations[].Instances[]| .InstanceId + " " + (.Tags[] | select(.Key=="mnemonic-name").Value) + " " + .InstanceType + " " + .ImageId + " " + (.Tags[] | select(.Key=="ssh-user").Value) + " " + .Architecture + " " + .State.Name + " " + .PublicIpAddress'
+    epsg "$@"
+    epsl "$@"
+}
+
+# usage: epsl [--region REGION]
+# Return a short description of all mnemonic-named EC2 instances (l = labelled)
+# Optional region parameter ("--region" required)
+# This returns instances *with* a mnemonic-name tag
+epsl() {
+    aws "$@" --output json ec2 describe-instances --filters Name=tag-key,Values="mnemonic-name" | \
+        jq -r '.Reservations[].Instances[]| .InstanceId + " " + (.Tags[] | select(.Key=="mnemonic-name").Value) + " " + .InstanceType + "\/" + .Architecture + " " + (.Tags[] | select(.Key=="ssh-user").Value) + "@" + .PublicIpAddress + " " + .ImageId + " " + .State.Name'
+}
+
+# usage: epsg [--region REGION]
+# Return a description of all untagged EC2 instances (g = global)
+# Optional region parameter ("--region" required)
+# This returns instances *without* a mnemonic-name tag which 
+#  is all instances created by any other means other than this
+#  set of macro.
+epsg() {
+    aws "$@" --output json ec2 describe-instances --query 'Reservations[].Instances[?!not_null(Tags[?Key == `mnemonic-name`].Value)] | []'| \
+        jq -r '.[]| .InstanceId + " " + .InstanceType + "\/" + .Architecture + " " + .ImageId + " " + .LaunchTime + " " + .State.Name + " " + .Placement.AvailabilityZone'
 }
 
 # usage: enameid <instance-name>
@@ -61,7 +82,7 @@ ekillid() {
 # usage: epurge
 # terminate all running instances
 epurge() {
-    ekillid `eps | grep running | awk '{print $1}'`
+    ekillid `epsl | grep running | awk '{print $1}'`
 }
 
 # usage: ekn <instance-name>
