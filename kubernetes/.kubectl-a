@@ -1,0 +1,98 @@
+
+# Convenient aliases for kubectl & minikube
+
+if ! [ -x "$(command -v kubectl)" ]; then
+  echo 'Error: kubectl is not installed. This kubectl macro package will NOT operate!' >&2
+else
+  echo "Use 'kubectla' for a cheatsheet"
+fi
+
+alias refkubectl='source ~/.kubectl-a'
+
+# cheatsheet to jog your memory
+kubectla() {
+    echo "kubectl macros:"
+    echo "  kubectl: kc"
+    echo "  context: kls, kpwd, kcd, krm, kmv, kdefns"
+    echo "  scale: kscale"
+    echo "  pod: kps"
+    echo "  minikube: mk"
+    echo "Use 'which <macro>' to review"
+}
+
+# shorthand for interactive use
+alias kc=kubectl
+
+# return current context
+kpwd() {
+    kubectl config current-context
+}
+
+# examine available context 
+kls() {
+    kubectl config get-contexts
+}
+
+# change current context
+# Usage: kcd <context-name>
+kcd() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: kcd <context-name>"
+    else
+      kubectl config use-context ${1}
+    fi
+}
+
+# remove existing context
+# Usage: krm <context-name>
+krm() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: krm <context-name>"
+    else
+      kubectl config delete-context ${1}
+    fi
+}
+
+# rename current context
+# Usage: kmv <context-name> <new-context-name>
+kmv() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: kmv <context-name> <new-context-name>"
+    else
+      kubectl config rename-context ${1} ${2}
+    fi
+}
+
+# examine running pod 
+kps() {
+    kubectl get po
+}
+
+# scale 
+# Usage: kubectl scale 
+kscale() {
+    if [[ $# -ne 2 ]]; then
+      echo "Usage: kscale <resource> <replica-count>"
+    else
+      kubectl scale ${1} --replicas=${2}
+    fi
+}
+
+# usage: kdefns <namespace>
+# Set the current context's default namespace
+kdefns() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: kdefns <namespace>"
+    else
+      kubectl config set-context `kubectl config current-context` --namespace=${1}
+    fi
+}
+
+# reminder: 
+#   kubectl exec <container> -it -- <cmd> [<arg1>...]
+
+# shorthand
+# usage: minikube start --kubernetes-version=1.21.0 --memory 8192 --cpus 4
+alias mk='minikube'
+
+

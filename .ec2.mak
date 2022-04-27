@@ -17,7 +17,7 @@ REGION=us-west-2
 
 # This alternate regions is available if Canadian data residency is important.
 # NOTE: We have not defined every AMI or instance for this region.
-# You will have to add some more if you turn set this region.
+# You will need to look these up and add them to this file.
 
 #REGION=ca-central-1
 
@@ -29,13 +29,12 @@ REGION=us-west-2
 #  1. https://us-west-2.console.aws.amazon.com/ec2/v2/home?region=us-west-2#SecurityGroups:
 #     https://ca-central-1.console.aws.amazon.com/ec2/v2/home?region=ca-central-1#SecurityGroups:
 #  2. aws ec2 describe-security-groups --output json | jq '.SecurityGroups[].GroupId'
+#
+# Use the AWS web console to tag *only one* security group with a tag of "gita-sync". (No value is needed.)
+#
 
-# Security group ID
-SGI_WFH=
-
-# Optional for displaying a security group rule via the "sgr" target
-# ID for security group rule ID to be displayed in detail
-SGRI_WFH=
+# Look up the chosen security group via the gita-sync tag
+SGI_WFH=`aws ec2 describe-security-groups --output json --filters Name=tag-key,Values="gita-sync" | jq -r '.SecurityGroups[]| .GroupId'`
 
 #
 # Specify the name of your key-pair; 
@@ -53,14 +52,11 @@ LKEY=
 # Check that required variables have been defined
 
 ifeq ($(SGI_WFH),)
-  $(error Variable SGI_WFH has not been defined)
+  $(error You must tag your chosen security group! Variable SGI_WFH has not been defined)
 else ifeq ($(KEY),)
   $(error Variable KEY has not been defined)
 else ifeq ($(LKEY),)
   $(error Variable LKEY has not been defined)
-else
-  # We're good to go!
-  # SGRI_WFH is optional so we don't require it
 endif
 
 #==============================
@@ -375,15 +371,7 @@ LOGD=.
 NAMING_SVC=https://frightanic.com/goodies_content/docker-names.php
 
 
-.phony=sgr sg up ssh sshdns up-arm ssh-arm keyfile
-
-# Display the details of a single security group rule
-sgr:
-	aws --region $(REGION) --output json ec2 describe-security-group-rules --security-group-rule-ids $(SGRI_WFH)
-
-# Display the current security group
-sg:
-	aws --region $(REGION) --output json ec2 describe-security-groups --group-id $(SGI_WFH)
+.phony=up ssh sshdns up-arm ssh-arm keyfile
 
 # Return the path to the keyfile
 # Called by bash alias functions that need to ssh

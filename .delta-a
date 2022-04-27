@@ -1,0 +1,55 @@
+
+# Convenient aliases for working with Delta Lake tables
+# NB: These aliases use jq (https://stedolan.github.io/jq/) judiciously!
+
+if ! [ -x "$(command -v jq)" ]; then
+  echo 'Warning: jq is not installed. Some macros will NOT operate!' >&2
+else
+  echo "Use 'deltaa' for a cheatsheet"
+fi
+
+
+alias refdelta='source ~/.delta-a'
+
+# cheatsheet to jog your memory
+deltaa() {
+    echo "Delta Lake macros:"
+    echo "  Schema: dlschema"
+    echo "  Statistics: dlstats"
+    echo "  Checkpoint: dlcheckpoint"
+    echo "  Housekeeping: refdelta, deltaa"
+    echo "Use 'which <macro>' to review"
+}
+
+
+# Examine the statistics element
+dlstats()
+{
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: dlstats <delta-json-file>"
+    else
+      jq -r '.add| select(.  != null) .stats' ${1} | jq '.'
+    fi
+}
+
+# Examine the metaData element
+dlschema()
+{
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: dlschema <delta-json-file>"
+    else
+      jq -r '.metaData| select(.  != null) .schemaString ' ${1} | jq '.'
+    fi
+}
+
+# Examine a checkpoint file
+dlcheckpoint()
+{
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: dlcheckpoint <delta-checkpoint-parquet-file>"
+    else
+      parquet meta ${1}
+    fi
+}
+
+

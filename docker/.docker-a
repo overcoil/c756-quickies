@@ -1,0 +1,78 @@
+
+if ! [ -x "$(command -v wget)" ]; then
+  echo 'Error: wget is not installed. Macros NOT installed!' >&2
+else
+  echo "Use 'dockera' for a cheatsheet"
+fi
+
+# cheatsheet to jog your memory
+dockera() {
+    echo "Docker macros:"
+    echo "  image housekeeping: dkls, dkrm"
+    echo "  run-time management: dkps, dkstop, dkkill, dkrmc"
+    echo "  misc: dkit, dkstat, dkclean, dhtags, dkdvm"
+    echo "Use 'which <macro>' to review"
+}
+
+alias refdocker='source ~/.docker-a'
+
+
+# Convenient aliases for Docker
+
+alias dkls='docker image ls '
+alias dkrm='docker image rm '
+alias dkri='docker run -it '
+
+alias dkrmc='docker container rm '
+
+# abbreviated output
+dkps() {
+    docker container ls -a
+}
+
+# long output
+dkpsl() {
+    docker container ls -a --no-trunc
+}
+
+# Correct way to pull just one variablel out is: docker exec <container_id> bash -c 'echo "$ENV_VAR"'
+# see: https://stackoverflow.com/questions/34051747/get-environment-variable-from-docker-container
+# docker inspect also works
+dkenv() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: dkenv <container-name>"
+    else
+      docker exec ${1} env  
+    fi
+}
+
+alias dkstop='docker container stop '
+alias dkkill='docker container rm -f '
+
+# usage: dkit <container> <command> [<param1>...]
+alias dkit='docker exec -it '
+
+# 
+alias dkclean='docker builder prune'
+
+alias dkstat='docker stats '
+
+# from https://github.com/nickjj/dotfiles/blob/master/.aliases as suggested by Raju Gandhi
+dhtags () {
+    local image="${1}"
+
+    wget -q https://registry.hub.docker.com/v1/repositories/"${image}"/tags -O - \
+        | tr -d '[]" ' | tr '}' '\n' | awk -F: '{print $3}'
+}
+
+dkpurge () {
+    docker container stop $(docker ps -aq) 
+    docker container rm $(docker ps -aq)
+}
+
+# ref: https://github.com/justincormack/nsenter1
+dkdvm() {
+    docker run -it --rm --privileged --pid=host justincormack/nsenter1
+}
+
+

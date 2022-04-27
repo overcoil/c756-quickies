@@ -1,0 +1,33 @@
+
+
+if ! [ -x "$(command -v terraform)" ]; then
+  echo 'Error: terraform is not installed. This macro package will NOT operate!' >&2 
+else
+  echo "Use 'terraforma' for a cheatsheet"
+fi
+
+alias refterraform='source ~/.terraform-a'
+
+# cheatsheet to jog your memory
+terraforma() {
+    echo "terraform macros:"
+    echo "  tf: terraform"
+    echo "  tfaa: terraform apply -auto-approve"
+    echo "  tfd: terraform destroy"
+    echo "  misc: refterraform, terraforma"
+    echo "  TF_VAR_AWS_ACCESS_KEY_ID/TF_VAR_AWS_SECRET_ACCESS_KEY exported"
+    echo "Use 'which <macro>' to review"
+}
+
+# Convenient aliases for Terraform
+
+alias tf=terraform 
+alias tfaa='terraform apply -auto-approve'
+alias tfd='terraform destroy'
+
+# specify the profile to use 
+PROF=iamgc
+
+export TF_VAR_AWS_ACCESS_KEY_ID=`aws --profile $PROF configure get aws_access_key_id`
+export TF_VAR_AWS_SECRET_ACCESS_KEY=`aws --profile $PROF configure get aws_secret_access_key`
+

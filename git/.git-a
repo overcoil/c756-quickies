@@ -1,0 +1,274 @@
+set +x
+
+# Convenient aliases for the aws cli
+# NB: These aliases use jq (https://stedolan.github.io/jq/) judiciously!
+
+if ! [ -x "$(command -v jq)" ]; then
+  echo 'Warning: jq is not installed. Some macros will NOT operate!' >&2
+else
+  echo "Use 'gita' for a cheatsheet"
+fi
+
+alias refgit='source ~/.git-a'
+
+# cheatsheet to jog your memory
+gita() {
+    echo "git macro:"
+    echo "  Commit: ga, gaa, gcom"
+    echo "  Branches: glsb, gcdb, gnewb, grmb"
+    echo "  Remotes: glsr, glink, grmr"
+    echo "  Stashes: glss"
+    echo "  Tags: glst, gtag, grmt"
+    echo "  Revert: grevertb, grevertf"
+    echo "  History: ghist, glg, glg2, glg3"
+    echo "  Misc: gconfig, ginfo"
+    echo "  Reminder: init, clone, push, pull"
+    echo "  Housekeeping: refgit, gita"
+}
+
+
+
+# revert one file
+# This replaces the specified file with the latest version from the current branch
+grevertf() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: grevertf <path-to-file>"
+    else
+      git checkout -- $@
+    fi
+}
+
+
+# revert full branch
+grevertb() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: grevertb"
+    else
+      echo TODO
+    fi
+}
+
+
+# diff file against immediate predecessor
+gdiff() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: gdiff <file>"
+    else
+      git diff HEAD^ ${1}
+    fi
+}
+
+# list of remotes
+glsr() {
+    git remote -v
+}
+
+
+# associate local repo with remote; default remote is origin
+glink() {
+    if [[ $# -lt 1 ]]; then
+      echo "Usage: glink <GitHub-URL-ending-with-.git> [remote name]"
+    else
+      # default case
+      if [[ $# -eq 1 ]]; then
+        set -x
+        git remote add origin ${1}
+        set +x
+      fi
+
+      # specified remote name
+      if [[ $# -eq 2 ]]; then
+        set -x
+        git remote add ${2} ${1}
+        set +x
+      fi
+    fi
+}
+
+
+# unlink from a specified remote
+grmr() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: grmr <remote-name>"
+    else
+      git remote remove ${1}
+    fi
+}
+
+
+
+# list of stashes
+glss() {
+    git stash list
+}
+
+
+# list of branches
+glsb() {
+    git branch -a
+}
+
+
+# create new branch
+# Usage: gnewb <branch-name>
+gnewb() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: gnewb <new-branch-new>"
+    else
+      set -x
+      git branch ${1}
+      set +x
+      echo "You may wish to push this to your origin (or other remote) with:"
+      echo "  git push --set-upstream origin ${1}"
+    fi
+}
+
+# switch to an existing branch
+# Note: the trailing -- guards against an ambiguity between a local file and a branch name
+gcdb() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: gcdb <existing-branch-name>"
+    else
+      git checkout ${1} --
+    fi
+}
+
+# delete an existing branch
+# TODO: 
+grmb() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: grmb <existing-branch-name>"
+    else
+      git branch --delete ${1}
+    fi
+}
+
+
+# list tags with optional pattern
+#
+# See: https://stackoverflow.com/questions/6900328/git-command-to-show-all-lightweight-tags-creation-dates
+#
+glst() {
+    git tag -l --sort=-creatordate --format='%(creatordate:short):  %(refname:short)' $@
+}
+
+
+# delete existing tag
+grmt() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: grmt <tag-name>"
+    else
+      git tag --delete ${1}
+    fi
+}
+
+# create a tag
+# 
+# There are options to cryptographically sign the tag with a specified key
+#
+gtag() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: gtag <new-tag-name>"
+    else
+      git tag --annotate ${1}
+    fi
+}
+
+
+# absolute barebone config
+gconfig() {
+    git config user.name
+    git config user.email
+}
+
+# show what has been configured
+ginfo() {
+    git config --global --list 
+}
+
+
+
+# add file(s) to staging
+ga() {
+    if [[ $# -lt 1 ]]; then
+      echo "Usage: ga <file> [file2]..."
+    else
+      git add $@
+    fi 
+}
+
+# shorthand for 'git status'
+# consider adding:
+#   --short
+#   --branch
+gstat() {
+    git status --ignored
+}
+
+# add everything to staging
+gaa() {
+    git add -A
+}
+
+# commit
+gcom() {
+    if [[ $# -lt 1 ]]; then
+      echo "Usage: gcom <quoted-comment>"
+    else
+      git commit -m $@
+    fi 
+}
+
+
+
+# history (log) of current branch
+#
+# Related usage: window of time
+#   git log --after=2022-01-23 --before=2022-01-26T16:00
+#   git log path/to/file
+#
+# Handy options:
+#   --oneline
+#   --decorate
+#   --abbrev-commit
+#   --date=relative
+#
+ghist() {
+    git log $@
+}
+
+
+# show a compact viz of the branch/commit history
+# source: https://stackoverflow.com/questions/1057564/pretty-git-branch-graphs
+# 
+# Usage: glg [branch-name]
+#
+glg() {
+#    git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all
+    git log --graph --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(bold white)— %an%C(reset)%C(bold yellow)%d%C(reset)' --abbrev-commit --date=relative $@
+}
+
+
+
+# source: https://stackoverflow.com/questions/1057564/pretty-git-branch-graphs
+# 
+# Usage: glg2 [branch-name]
+#
+glg2() {
+#    git log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(dim white)- %an%C(reset)' --all
+    git log --graph --format=format:'%C(bold blue)%h%C(reset) - %C(bold cyan)%aD%C(reset) %C(bold green)(%ar)%C(reset)%C(bold yellow)%d%C(reset)%n''          %C(white)%s%C(reset) %C(bold white)— %an%C(reset)' --abbrev-commit $@
+}
+
+
+
+# show an ASCII viz of the repo's branch/commit history
+glg3() {
+    git log --graph --abbrev-commit --decorate --date=relative --all
+}
+
+# git commit clustering
+# see also: https://devhints.io/git-log-format
+gclu() {
+    git log --format=format:'%an %h %ci' | sort -k 1 -k 3
+}
+
