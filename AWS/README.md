@@ -1,4 +1,4 @@
-# AWS CLI
+# awsa - Macro Package for AWS CLI
 
 ## Introduction
 
