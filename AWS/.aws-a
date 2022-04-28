@@ -1,8 +1,8 @@
 
-# Convenient aliases for re/learning/working/remembering AWS 
+# Convenient aliases for re/learning/working/remembering $AWS_PROFILE 
 
 # Prerequisites:
-#   AWS CLI (obviously)
+#   $AWS_PROFILE CLI (obviously)
 #   jq (https://stedolan.github.io/jq/)
 #   eksctl (if using EKS)
 
@@ -14,6 +14,11 @@
 
 # NB: If you change away from us-west-2, you *must* supply the AMI id below! You can go with 
 REGION=us-west-2
+
+# name of the security group to place your EC2 instances
+# You can either set it here or import it via $AWSA_SGI
+#SGI=sg-00000000000000000
+SGI=$AWSA_SGI
 
 # name of key uploaded to AWS.
 # You can either set it here or import it via $AWSA_REMOTE_KEY
@@ -27,7 +32,7 @@ LKEY=$AWSA_LOCAL_KEYPAIR
 
 # select a different profile if so desired. Beware eksctl restrictions!
 # You can either set it here or import it via $AWSA_PROFILE
-AWS_PROFILE=default
+AWS_PROFILE=--profile default
 #AWS_PROFILE=$AWSA_PROFILE
 
 # terminate is the natural option
@@ -104,7 +109,7 @@ fi
 
 # check your account no and IAM user
 awho() {
-    aws --profile $AWS_PROFILE sts get-caller-identity
+    aws $AWS_PROFILE sts get-caller-identity
 }
 
 # refresh your macros after an update
@@ -138,7 +143,7 @@ eps() {
 #   an instance missing either will not be show up here.
 
 epsl() {
-    aws --profile $AWS_PROFILE "$@" --output json ec2 describe-instances --filters Name=tag-key,Values="mnemonic-name" | \
+    aws $AWS_PROFILE "$@" --output json ec2 describe-instances --filters Name=tag-key,Values="mnemonic-name" | \
     jq -r '.Reservations[].Instances[]| .InstanceId + " " + (.Tags[] | select(.Key=="mnemonic-name").Value) + " " + .InstanceType + "\/" + .Architecture + " " + (.Tags[] | select(.Key=="ssh-user").Value) + "@" + .PublicIpAddress + " " + .ImageId + " " + .State.Name' | sort -k 2
 }
 
@@ -151,7 +156,7 @@ epsl() {
 #  set of macro.
 
 epsg() {
-    aws --profile $AWS_PROFILE "$@" --output json ec2 describe-instances --query 'Reservations[].Instances[?!not_null(Tags[?Key == `mnemonic-name`].Value)] | []'| \
+    aws $AWS_PROFILE "$@" --output json ec2 describe-instances --query 'Reservations[].Instances[?!not_null(Tags[?Key == `mnemonic-name`].Value)] | []'| \
     jq -r '.[]| .InstanceId + " " + .InstanceType + "\/" + .Architecture + " " + .ImageId + " " + (.LaunchTime|tostring)[5:21] + " " + .Placement.AvailabilityZone + " " + .State.Name + " " + .PrivateIpAddress + " " + .PublicIpAddress' | sort -k 4
 }
 
@@ -162,7 +167,7 @@ epsg() {
 # This returns all instances
 
 epsa() {
-    aws --profile $AWS_PROFILE "$@" --output json ec2 describe-instances | \
+    aws $AWS_PROFILE "$@" --output json ec2 describe-instances | \
 	  jq -r '.Reservations[].Instances[]| .InstanceId + " " + .InstanceType + "\/" + .Architecture + " " + .ImageId + " " + (.LaunchTime|tostring)[5:19] + "UTC " + .Placement.AvailabilityZone + " " + .State.Name + " " + .PrivateIpAddress + " " + .PublicIpAddress' | sort -k 4
 }
 
@@ -174,13 +179,13 @@ erun() {
 
     MNAME=`curl --silent $NAMING_SVC`
     set -x
-    aws --profile $AWS_PROFILE --region $REGION --output json ec2 run-instances \
+    aws $AWS_PROFILE --region $REGION --output json ec2 run-instances \
       --instance-initiated-shutdown-behavior $SHUTDOWN_BEH \
       --tag-specifications 'ResourceType=instance,Tags=[{Key=mnemonic-name,Value='$MNAME'}, {Key=course,Value='c756'}, {Key=ssh-user,Value='$SSH_USER'}, {Key=bill-to,Value=self}]' \
-      --security-group-ids $SGI_WFH \
+      --security-group-ids $SGI \
       --key-name $KEY \
       --instance-type $INSTANCE \
-      --image-id $IMAGE > $LOGD/$MNAME.log
+      --image-id $AWSAAMI > $LOGD/$MNAME.log
     set +x
     echo $MNAME
 }
@@ -196,31 +201,31 @@ erun() {
 selectpkg() {
     if [[ $# -eq 0 ]]; then
       INSTANCE=$FREETIER
-      IMAGE=$AMI_UBUNTU20_X86
+      AWSAAMI=$AMI_UBUNTU20_X86
       SSH_USER=$UBUNTU_USER
     else
       case ${1} in
         "arm")
           INSTANCE=$FREETIER_ARM
-          IMAGE=$AMI_UBUNTU20_ARM
+          AWSAAMI=$AMI_UBUNTU20_ARM
           SSH_USER=$UBUNTU_USER
           ;;
 
         "gpu_small")
           INSTANCE=$GPU_ML_X
-          IMAGE=$AMI_AMAZON_LINUX_ML
+          AWSAAMI=$AMI_AMAZON_LINUX_ML
           SSH_USER=$AMAZON_USER
           ;;
 
         "agpu_small")
           INSTANCE=$GPU_ML_2X_ARM
-          IMAGE=$AMI_UBUNTU_ML_ARM
+          AWSAAMI=$AMI_UBUNTU_ML_ARM
           SSH_USER=$UBUNTU_USER
           ;;
 
         *)
           INSTANCE=invalid
-          IMAGE=invalid
+          AWSAAMI=invalid
           SSH_USER=invalid
           ;;
       esac
@@ -254,7 +259,7 @@ ecat() {
     if [[ $# -lt 1 ]]; then
       echo "Usage: ecat <instance-id> [--output json]"
     else
-      aws --profile $AWS_PROFILE ec2 describe-instances --instance-id $@
+      aws $AWS_PROFILE ec2 describe-instances --instance-id $@
     fi
 }
 
@@ -269,7 +274,7 @@ epurge() {
 # usage: enameid <instance-name>
 # Return the ID of a named instance
 enameid () {
-    aws --profile $AWS_PROFILE --output json ec2 describe-instances --filters Name=tag:mnemonic-name,Values="${1}" \
+    aws $AWS_PROFILE --output json ec2 describe-instances --filters Name=tag:mnemonic-name,Values="${1}" \
         | jq -r '.Reservations[].Instances[0] | .InstanceId'
 }
 
@@ -277,21 +282,21 @@ enameid () {
 # usage: enamesshu <instance-name>
 # Return the ssh-user (tagged) of a named instance
 enamesshu () {
-    aws --profile $AWS_PROFILE --output json ec2 describe-instances --filters Name=tag:mnemonic-name,Values="${1}" \
+    aws $AWS_PROFILE --output json ec2 describe-instances --filters Name=tag:mnemonic-name,Values="${1}" \
         | jq -r '.Reservations[].Instances[].Tags[] | select(.Key=="ssh-user").Value'
 }
 
 # usage: enamddns <instance-name>
 # Return the DNS name of a named instance
 enamedns () {
-    aws --profile $AWS_PROFILE --output json ec2 describe-instances --filters Name=tag:mnemonic-name,Values="${1}" \
+    aws $AWS_PROFILE --output json ec2 describe-instances --filters Name=tag:mnemonic-name,Values="${1}" \
         | jq -r '.Reservations[].Instances[0] | .PublicDnsName'
 }
 
 # usage: ekillid <instance-id>
 # Kill an EC2 instance given its instance-id
 ekillid() {
-    aws --profile $AWS_PROFILE  --output json ec2 terminate-instances --instance-id "$@"
+    aws $AWS_PROFILE  --output json ec2 terminate-instances --instance-id "$@"
 }
 
 
@@ -305,7 +310,7 @@ etags() {
     if [[ $# -ne 1 ]]; then
       echo "Usage: etagsn <instance-id>"
     else
-      aws --profile $AWS_PROFILE --output json ec2 describe-instances --instance-id="$@" | \
+      aws $AWS_PROFILE --output json ec2 describe-instances --instance-id="$@" | \
 	jq -r '.Reservations[].Instances[].Tags[]| .Key + " " + .Value'  | sort 
     fi
 }
@@ -316,7 +321,7 @@ etag() {
     if [[ $# -ne 3 ]]; then
       echo "Usage: etag <instance-id> <tag-key> <tag-value>"
     else
-      aws --profile $AWS_PROFILE ec2 create-tags --resources ${1} --tag Key=${2},Value=${3}
+      aws $AWS_PROFILE ec2 create-tags --resources ${1} --tag Key=${2},Value=${3}
     fi
 }
 
@@ -327,7 +332,7 @@ ermtag() {
     if [[ $# -ne 2 ]]; then
       echo "Usage: ermtag <instance-id> <tag-key>"
     else
-      aws --profile $AWS_PROFILE ec2 delete-tags --resources ${1} --tag Key=${2}
+      aws $AWS_PROFILE ec2 delete-tags --resources ${1} --tag Key=${2}
     fi
 }
 
@@ -337,15 +342,15 @@ ermtag() {
 
 # View all quotas
 esqa() {
-    aws --profile $AWS_PROFILE service-quotas list-service-quotas --service-code ec2 --output json
+    aws $AWS_PROFILE service-quotas list-service-quotas --service-code ec2 --output json
 }
 
 
 # L-1216C47A = On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances
 # L-DB2E81BA = On-Demand G and VT instances
 esq() {
-    aws --profile $AWS_PROFILE service-quotas get-service-quota --service-code ec2 --quota-code L-1216C47A --output json
-    aws --profile $AWS_PROFILE service-quotas get-service-quota --service-code ec2 --quota-code L-DB2E81BA --output json
+    aws $AWS_PROFILE service-quotas get-service-quota --service-code ec2 --quota-code L-1216C47A --output json
+    aws $AWS_PROFILE service-quotas get-service-quota --service-code ec2 --quota-code L-DB2E81BA --output json
 }
 
 
@@ -368,17 +373,17 @@ esn ()
 # S3
 
 s3ls() {
-    aws --profile $AWS_PROFILE s3 ls $@
+    aws $AWS_PROFILE s3 ls $@
 }
 
 
 s3lsr() {
-    aws --profile $AWS_PROFILE s3 ls --recursive $@
+    aws $AWS_PROFILE s3 ls --recursive $@
 }
 
-alias s3cp='aws --profile $AWS_PROFILE s3 cp '
-alias s3rm='aws --profile $AWS_PROFILE s3 rm '
-alias s3mv='aws --profile $AWS_PROFILE s3 mv '
+alias s3cp='aws $AWS_PROFILE s3 cp '
+alias s3rm='aws $AWS_PROFILE s3 rm '
+alias s3mv='aws $AWS_PROFILE s3 mv '
 
 
 # --------------
@@ -386,7 +391,7 @@ alias s3mv='aws --profile $AWS_PROFILE s3 mv '
 
 # list all keyspaces
 cassls() {
-    aws --profile $AWS_PROFILE keyspaces list-keyspaces 
+    aws $AWS_PROFILE keyspaces list-keyspaces 
 }
 
 
@@ -395,7 +400,7 @@ casslst() {
     if [[ $# -ne 1 ]]; then
       echo "Usage: casslst <keyspace-name>"
     else
-      aws --profile $AWS_PROFILE keyspaces list-tables --keyspace-name $@
+      aws $AWS_PROFILE keyspaces list-tables --keyspace-name $@
     fi
 }
 
@@ -405,7 +410,7 @@ casslst() {
 
 # cfls [--region <region>]
 cfls() {
-    aws --profile $AWS_PROFILE cloudformation list-stacks --output json $@ \
+    aws $AWS_PROFILE cloudformation list-stacks --output json $@ \
         | jq -r '.StackSummaries[]| .StackName + " " + .StackStatus + " " + (.CreationTime|tostring)[5:19] + "UTC "' \
         | grep --invert-match DELETE_COMPLETE \
         | sort -k 3
@@ -414,7 +419,7 @@ cfls() {
 
 # cflsl [--region <region>]
 cflsl() {
-    aws --profile $AWS_PROFILE cloudformation list-stacks --output json $@ \
+    aws $AWS_PROFILE cloudformation list-stacks --output json $@ \
         | jq -r '.StackSummaries[]| .StackName + " " + .StackStatus + " " + .CreationTime + " " + .StackId' \
         | grep --invert-match DELETE_COMPLETE \
         | sort -k 3
@@ -422,11 +427,11 @@ cflsl() {
 
 
 # cfrm <stack-name> [--region <region>]
-alias cfrm='aws --profile $AWS_PROFILE cloudformation delete-stack --stack-name '
+alias cfrm='aws $AWS_PROFILE cloudformation delete-stack --stack-name '
 
 
 # cfcat <stack-name> [--region <region>]
-alias cfcat='aws --profile $AWS_PROFILE cloudformation describe-stacks --output json --stack-name '
+alias cfcat='aws $AWS_PROFILE cloudformation describe-stacks --output json --stack-name '
 
 
 # create a new stack from a JSON definition
@@ -435,9 +440,9 @@ cfnew() {
       echo "Usage: cfnew <new-stack-name> <json-file> [region]"
     else
       if [[ $# -eq 2 ]]; then
-        aws --profile $AWS_PROFILE cloudformation create-stack --stack-name ${1} --template-body file://${2} 
+        aws $AWS_PROFILE cloudformation create-stack --stack-name ${1} --template-body file://${2} 
       else
-        aws --profile $AWS_PROFILE cloudformation create-stack --stack-name ${1} --template-body file://${2} --region ${3}
+        aws $AWS_PROFILE cloudformation create-stack --stack-name ${1} --template-body file://${2} --region ${3}
       fi
     fi
 }
@@ -447,14 +452,14 @@ cfnew() {
 # DynamoDB
 
 
-alias ddbls='aws --profile $AWS_PROFILE dynamodb list-tables $@' 
+alias ddbls='aws $AWS_PROFILE dynamodb list-tables $@' 
 
 # examine a DynamoDB table (including provisioned read/write capacities)
 ddbcat() {
     if [[ $# -lt 1 ]]; then 
       echo "Usage: ddbcat <table-name> [--region <region>] [--output json]"
     else
-      aws --profile $AWS_PROFILE dynamodb describe-table --table-name $@
+      aws $AWS_PROFILE dynamodb describe-table --table-name $@
     fi
 }
 
@@ -463,22 +468,22 @@ ddbcap() {
     if [[ $# -ne 3 ]]; then 
       echo "Usage: ddbcap <table-name> <read-unit> <write-unit>"
     else
-      aws --profile $AWS_PROFILE dynamodb update-table --table-name ${1} --provisioned-throughput ReadCapacityUnits=${2},WriteCapacityUnits=${3}
+      aws $AWS_PROFILE dynamodb update-table --table-name ${1} --provisioned-throughput ReadCapacityUnits=${2},WriteCapacityUnits=${3}
     fi
 }
 
 
 # Returns the current provisioned-capacity quotas for your Amazon Web Services account
 ddbinfo() {
-    aws --profile $AWS_PROFILE dynamodb describe-limits --output json
+    aws $AWS_PROFILE dynamodb describe-limits --output json
 
 #    available as discrete values too!
 
 #    L-34F6A552: Account-level read throughput limit (Provisioned mode)
-#    aws --profile $AWS_PROFILE service-quotas get-service-quota --service-code dynamodb --quota-code L-34F6A552 --output json
+#    aws $AWS_PROFILE service-quotas get-service-quota --service-code dynamodb --quota-code L-34F6A552 --output json
 
 #    L-CF0CBE56: Table-level read throughput limit
-#    aws --profile $AWS_PROFILE service-quotas get-service-quota --service-code dynamodb --quota-code L-CF0CBE56 --output json
+#    aws $AWS_PROFILE service-quotas get-service-quota --service-code dynamodb --quota-code L-CF0CBE56 --output json
 }
 
 # examine a DynamoDB table (including provisioned read/write capacities)
@@ -486,7 +491,7 @@ ddbdrop() {
     if [[ $# -lt 1 ]]; then 
       echo "Usage: ddbdrop <table-name> [--region <region>] [--output json]"
     else
-      aws --profile $AWS_PROFILE dynamodb delete-table --table-name $@
+      aws $AWS_PROFILE dynamodb delete-table --table-name $@
     fi
 }
 
@@ -509,7 +514,7 @@ ekls() {
     if [[ $AWS_PROFILE = "default" ]]; then
       eksctl get clusters -v 0 
     else
-      aws --profile $AWS_PROFILE eks list-clusters
+      aws $AWS_PROFILE eks list-clusters
     fi
 }
 
@@ -519,7 +524,7 @@ ekrm() {
     if [[ $# -ne 1 ]]; then
       echo "Usage: ekrm <cluster-name>"
     else
-      aws --profile $AWS_PROFILE eks delete-cluster --name ${1}
+      aws $AWS_PROFILE eks delete-cluster --name ${1}
     fi
 }
 
@@ -532,7 +537,7 @@ ekcat() {
       if [[ $AWS_PROFILE = "default" ]]; then
         eksctl get nodegroup --cluster ${1}
       else
-        aws --profile $AWS_PROFILE eks describe-cluster --name ${1}
+        aws $AWS_PROFILE eks describe-cluster --name ${1}
       fi
     fi
 }
@@ -557,7 +562,7 @@ ngls() {
     if [[ $# -ne 1 ]]; then
       echo "Usage: ngls <cluster-name>"
     else
-      aws --profile $AWS_PROFILE eks list-nodegroups --cluster-name ${1}
+      aws $AWS_PROFILE eks list-nodegroups --cluster-name ${1}
     fi
 }
 
@@ -567,7 +572,7 @@ ngcat() {
     if [[ $# -ne 2 ]]; then
       echo "Usage: ngcat <cluster-name> <nodegroup-name>"
     else
-      aws --profile $AWS_PROFILE eks describe-nodegroup --cluster-name ${1} --nodegroup-name ${2}
+      aws $AWS_PROFILE eks describe-nodegroup --cluster-name ${1} --nodegroup-name ${2}
     fi
 }
 
@@ -577,7 +582,7 @@ ngrm() {
     if [[ $# -ne 2 ]]; then
       echo "Usage: ngrm <cluster-name> <nodegroup-name>"
     else
-      aws --profile $AWS_PROFILE eks delete-nodegroup --cluster-name ${1} --nodegroup-name ${2}
+      aws $AWS_PROFILE eks delete-nodegroup --cluster-name ${1} --nodegroup-name ${2}
     fi
 }
 
@@ -589,7 +594,7 @@ ngrm() {
 # usage: emls
 # List all running EMR clusters, grouped by state and sorted by id
 emls() {
-    aws --profile $AWS_PROFILE emr list-clusters --output json | \
+    aws $AWS_PROFILE emr list-clusters --output json | \
       jq -r '.Clusters[]| .Id + " " + .Name + " " + .Status.State + " " +.Status.Timeline.CreationDateTime + " " + (.NormalizedInstanceHours|tostring) ' | \
       egrep -v "TERMINATED " | sort -k 4 -k 3
 }
@@ -598,7 +603,7 @@ emls() {
 # usage: emlsa
 # List all EMR clusters, grouped by state and sorted by id
 emlsa() {
-    aws --profile $AWS_PROFILE emr list-clusters --output json | \
+    aws $AWS_PROFILE emr list-clusters --output json | \
       jq -r '.Clusters[]| .Id + " " + .Name + " " + .Status.State + " " +.Status.Timeline.CreationDateTime + " " + (.NormalizedInstanceHours|tostring) ' | \
       sort -k 4 -k 3 
 }
@@ -609,7 +614,7 @@ emwait() {
     if [[ $# -ne 1 ]]; then
       echo "Usage: emwait <cluster-id>"
     else
-      aws --profile $AWS_PROFILE emr wait cluster-running --cluster-id ${1}
+      aws $AWS_PROFILE emr wait cluster-running --cluster-id ${1}
     fi
 }
 
@@ -620,7 +625,7 @@ emcat() {
     if [[ $# -ne 1 ]]; then
       echo "Usage: emcat <cluster-id>"
     else
-      aws --profile $AWS_PROFILE emr describe-cluster --output json --cluster-id ${1} | head -n 10
+      aws $AWS_PROFILE emr describe-cluster --output json --cluster-id ${1} | head -n 10
     fi
 }
 
@@ -631,7 +636,7 @@ emcatl() {
     if [[ $# -lt 1 ]]; then
       echo "Usage: emcatl <cluster-id> [--output json]"
     else
-      aws --profile $AWS_PROFILE emr describe-cluster --output json --cluster-id "$@" 
+      aws $AWS_PROFILE emr describe-cluster --output json --cluster-id "$@" 
     fi
 }
 
@@ -642,7 +647,7 @@ emrm() {
     if [[ $# -lt 1 ]]; then
       echo "Usage: emrm <cluster-id> [--output json]"
     else
-      aws --profile $AWS_PROFILE emr terminate-clusters --cluster-id "$@"
+      aws $AWS_PROFILE emr terminate-clusters --cluster-id "$@"
     fi
 }
 
@@ -660,17 +665,17 @@ ems-submit() {
 
 # list experiments
 fils() {
-    aws --profile $AWS_PROFILE fis list-experiments --output json 
+    aws $AWS_PROFILE fis list-experiments --output json 
 }
 
 # list actions
 filsa() {
-    aws --profile $AWS_PROFILE fis list-actions --output json 
+    aws $AWS_PROFILE fis list-actions --output json 
 }
 
 # list templates
 filst() {
-    aws --profile $AWS_PROFILE fis list-experiment-templates --output json 
+    aws $AWS_PROFILE fis list-experiment-templates --output json 
 }
 
 
@@ -679,14 +684,14 @@ filst() {
 
 # list of tables (definitions)
 gls() {
-    aws --profile $AWS_PROFILE glue search-tables --output json | \
+    aws $AWS_PROFILE glue search-tables --output json | \
 	jq -r '.TableList[]| .DatabaseName+ " " + .Name+ " " + .Owner+ " " + .TableType + " " + .StorageDescriptor.Location' | \
 	sort -k 1 -k 2 
 }
 
 # list of schemas
 glss() {
-    aws --profile $AWS_PROFILE glue get-databases --output json | \
+    aws $AWS_PROFILE glue get-databases --output json | \
 	jq -r '.DatabaseList[]| .Name+ " " + .CreateTime + " " + .LocationUri + " " + .Description' | \
 	sort -k 1
 }
@@ -696,7 +701,7 @@ gcat() {
     if [[ $# -ne 2 ]]; then
       echo "Usage: gcat <database-name> <table-name>"
     else
-      aws --profile $AWS_PROFILE glue get-table --output json --database-name ${1} --name ${2}
+      aws $AWS_PROFILE glue get-table --output json --database-name ${1} --name ${2}
     fi
 }
 
@@ -705,7 +710,7 @@ grm() {
     if [[ $# -ne 2 ]]; then
       echo "Usage: grm <database-name> <table-name>"
     else
-      aws --profile $AWS_PROFILE glue delete-table --output json --database-name ${1} --name ${2}
+      aws $AWS_PROFILE glue delete-table --output json --database-name ${1} --name ${2}
     fi
 }
 
@@ -714,7 +719,7 @@ grm() {
 
 # list all roles
 rolels() {
-    aws --profile $AWS_PROFILE iam list-roles --output json | jq -r '.Roles[]| .Path + " " + .RoleName + " " + .CreateDate + " " + .Description' | sort -k 1 -k 3
+    aws $AWS_PROFILE iam list-roles --output json | jq -r '.Roles[]| .Path + " " + .RoleName + " " + .CreateDate + " " + .Description' | sort -k 1 -k 3
 }
 
 # examine a role
@@ -722,13 +727,13 @@ rolecat() {
     if [[ $# -ne 1 ]]; then
       echo "Usage: rolecat <role-name>"
     else
-      aws --profile $AWS_PROFILE iam get-role --output json --role-name "$@"
+      aws $AWS_PROFILE iam get-role --output json --role-name "$@"
     fi
 }
 
 # list all policies
 policyls() {
-    aws --profile $AWS_PROFILE iam list-policies --output json | jq -r '.Policies[]| .Path + " " + .PolicyName + " " + .CreateDate + " " + .Arn' | sort -k 1 -k 3
+    aws $AWS_PROFILE iam list-policies --output json | jq -r '.Policies[]| .Path + " " + .PolicyName + " " + .CreateDate + " " + .Arn' | sort -k 1 -k 3
 }
 
 # examine a policy
@@ -736,13 +741,13 @@ policycat() {
     if [[ $# -ne 1 ]]; then
       echo "Usage: policycat <policy-arn>"
     else
-      aws --profile $AWS_PROFILE iam get-policy --output json --policy-arn "$@"
+      aws $AWS_PROFILE iam get-policy --output json --policy-arn "$@"
     fi
 }
 
 # list of EC2 instance profiles
 iprls() {
-    aws --profile $AWS_PROFILE iam list-instance-profiles --output json | jq -r '.InstanceProfiles[]| .InstanceProfileName + " " + .Roles[0].RoleName' | sort -k 1
+    aws $AWS_PROFILE iam list-instance-profiles --output json | jq -r '.InstanceProfiles[]| .InstanceProfileName + " " + .Roles[0].RoleName' | sort -k 1
 }
 
 # examine an EC2 instance profile
@@ -750,7 +755,7 @@ iprcat() {
     if [[ $# -ne 1 ]]; then
       echo "Usage: iprcat <instance-profile-name>"
     else
-      aws --profile $AWS_PROFILE iam get-instance-profile --output json --instance-profile "$@"
+      aws $AWS_PROFILE iam get-instance-profile --output json --instance-profile "$@"
     fi
 }
 
@@ -759,7 +764,7 @@ iprcat() {
 
 # usage: elsk [--region reg]
 elsk () {
-    aws --profile $AWS_PROFILE ec2 describe-key-pairs $@
+    aws $AWS_PROFILE ec2 describe-key-pairs $@
 }
 
 
@@ -769,7 +774,7 @@ ecatk() {
     if [[ $# -lt 1 ]]; then
       echo "Usage: ecatkn <key-pair-name>"
     else
-      aws --profile $AWS_PROFILE ec2 describe-key-pairs --key-names $@
+      aws $AWS_PROFILE ec2 describe-key-pairs --key-names $@
     fi
 }
 
@@ -778,7 +783,7 @@ ermk() {
     if [[ $# -lt 1 ]]; then
       echo "Usage: ermk <key-pair-name>"
     else
-      aws --profile $AWS_PROFILE ec2 delete-key-pair --key-name $@
+      aws $AWS_PROFILE ec2 delete-key-pair --key-name $@
     fi
 }
 
@@ -788,7 +793,7 @@ enewk() {
     if [[ $# -lt 1 ]]; then
       echo "Usage: enewk <key-pair-name>"
     else
-      aws --profile $AWS_PROFILE ec2 create-key-pair --tag-specifications 'ResourceType=key-pair,Tags=[{Key=course,Value='c756'},{Key=bill-to,Value=self}]' --key-name $@
+      aws $AWS_PROFILE ec2 create-key-pair --tag-specifications 'ResourceType=key-pair,Tags=[{Key=course,Value='c756'},{Key=bill-to,Value=self}]' --key-name $@
     fi
 }
 
@@ -799,7 +804,7 @@ eimportk() {
     if [[ $# -ne 2 ]]; then
       echo "Usage: eimportk <key-pair-name> <pub-file-name-in-.ssh>"
     else
-      aws --profile $AWS_PROFILE ec2 import-key-pair --key-name ${1} --public-key-material fileb://~/.ssh/${2} \
+      aws $AWS_PROFILE ec2 import-key-pair --key-name ${1} --public-key-material fileb://~/.ssh/${2} \
 		--tag-specifications 'ResourceType=key-pair,Tags=[{Key=course,Value='c756'},{Key=bill-to,Value=self}]'
     fi
 }
@@ -811,8 +816,8 @@ eimportk() {
 
 # list of RDS instances & clusters
 rdsls() {
-    aws --profile $AWS_PROFILE "$@" rds describe-db-instances
-    aws --profile $AWS_PROFILE "$@" rds describe-db-clusters
+    aws $AWS_PROFILE "$@" rds describe-db-instances
+    aws $AWS_PROFILE "$@" rds describe-db-clusters
 }
 
 # TODO: probably can use a few more goodies here
@@ -822,7 +827,7 @@ rdsls() {
 # --------------
 # Redshift
 
-alias rsls='aws --profile $AWS_PROFILE redshift describe-clusters'
+alias rsls='aws $AWS_PROFILE redshift describe-clusters'
 
 
 
@@ -830,27 +835,27 @@ alias rsls='aws --profile $AWS_PROFILE redshift describe-clusters'
 # misc networking
 
 vpcls() {
-    aws --profile $AWS_PROFILE "$@" ec2 describe-vpcs --output json | jq -r '.Vpcs[]| .VpcId + " " + .State + " " + .InstanceTenancy + " " + (.Tags[] | select(.Key=="Name").Value)' | sort 
+    aws $AWS_PROFILE "$@" ec2 describe-vpcs --output json | jq -r '.Vpcs[]| .VpcId + " " + .State + " " + .InstanceTenancy + " " + (.Tags[] | select(.Key=="Name").Value)' | sort 
 }
 
 snls() {
-    aws --profile $AWS_PROFILE "$@" ec2 describe-subnets --output json | jq -r '.Subnets[]| .SubnetId + " " + .AvailabilityZone + " " + .VpcId' | sort -k 3
+    aws $AWS_PROFILE "$@" ec2 describe-subnets --output json | jq -r '.Subnets[]| .SubnetId + " " + .AvailabilityZone + " " + .VpcId' | sort -k 3
 }
 
 sgls() {
-    aws --profile $AWS_PROFILE "$@" ec2 describe-security-groups --output json | jq -r '.SecurityGroups[]| .GroupId + " " + .VpcId + " " + .GroupName' | sort -k 2
+    aws $AWS_PROFILE "$@" ec2 describe-security-groups --output json | jq -r '.SecurityGroups[]| .GroupId + " " + .VpcId + " " + .GroupName' | sort -k 2
 }
 
 sgcat() {
     if [[ $# -ne 1 ]]; then
       echo "Usage: sgcat <group-id>"
     else
-      aws --profile $AWS_PROFILE ec2 describe-security-groups --output json --group-ids ${1}
+      aws $AWS_PROFILE ec2 describe-security-groups --output json --group-ids ${1}
     fi
 }
 
 sgrls() {
-    aws --profile $AWS_PROFILE "$@" ec2 describe-security-group-rules --output json | jq -r '.SecurityGroupRules[]| .SecurityGroupRuleId + " " + .GroupId + " " + (.IpProtocol|tostring) + "/" + (.FromPort|tostring) + ":" + (.ToPort|tostring) + "-" + .CidrIpv4 + " " + .Description' | sort -k 2
+    aws $AWS_PROFILE "$@" ec2 describe-security-group-rules --output json | jq -r '.SecurityGroupRules[]| .SecurityGroupRuleId + " " + .GroupId + " " + (.IpProtocol|tostring) + "/" + (.FromPort|tostring) + ":" + (.ToPort|tostring) + "-" + .CidrIpv4 + " " + .Description' | sort -k 2
 }
 
 # Check default WFH ingress with current IP
@@ -859,7 +864,7 @@ sgrls() {
 #
 sgrwfh() {
     echo Checking default WFH ingress rule with current IP:
-    aws --profile $AWS_PROFILE ec2 describe-security-group-rules --output json --filters Name=tag-key,Values="scp-sync"
+    aws $AWS_PROFILE ec2 describe-security-group-rules --output json --filters Name=tag-key,Values="scp-sync"
     echo Your current IP is `curl --silent ${CHECKIP}`
 }
 
@@ -869,7 +874,7 @@ sgrcat() {
     if [[ $# -lt 1 ]]; then
       echo "Usage: sgrcat <security-group-rule-id>"
     else
-      aws --profile $AWS_PROFILE --profile $AWS_PROFILE ec2 describe-security-group-rules --security-group-rule-ids $@
+      aws $AWS_PROFILE $AWS_PROFILE ec2 describe-security-group-rules --security-group-rule-ids $@
     fi
 }
 
@@ -882,7 +887,7 @@ sgrup() {
     if [[ $# -ne 4 ]]; then
       echo "Usage: sgrup <security-group-id> <security-group-rule-id> <custom-IP> <desc>"
     else
-      aws --profile $AWS_PROFILE ec2 modify-security-group-rules --group-id ${1} \
+      aws $AWS_PROFILE ec2 modify-security-group-rules --group-id ${1} \
         --security-group-rules '[ {"SecurityGroupRuleId": "'${2}'","SecurityGroupRule": { "IpProtocol": "tcp", "FromPort": 22, "ToPort": 22, "CidrIpv4": "'${3}'/32", "Description": "'${4}'"} } ]'
     fi
 }
@@ -898,10 +903,10 @@ upwfh() {
     sgrwfh
 
     # loop over all security group rules marked for scp-sync
-    for r in $(aws --profile $AWS_PROFILE ec2 describe-security-group-rules --output json --filters Name=tag-key,Values="scp-sync" | jq -r '.SecurityGroupRules[]| .SecurityGroupRuleId')
+    for r in $(aws $AWS_PROFILE ec2 describe-security-group-rules --output json --filters Name=tag-key,Values="scp-sync" | jq -r '.SecurityGroupRules[]| .SecurityGroupRuleId')
     do
       # look up the security group that the rule belong to and inject it... (this loop run only once)
-      for g in $(aws --profile $AWS_PROFILE ec2 describe-security-group-rules --output json | jq -r '.SecurityGroupRules[]| .SecurityGroupRuleId + " " + .GroupId ' | grep ${r} | awk '{print $2}')
+      for g in $(aws $AWS_PROFILE ec2 describe-security-group-rules --output json | jq -r '.SecurityGroupRules[]| .SecurityGroupRuleId + " " + .GroupId ' | grep ${r} | awk '{print $2}')
       do
         sgrup ${g} ${r} `curl --no-progress-meter ${CHECKIP}` ${UPDATETS}
       done

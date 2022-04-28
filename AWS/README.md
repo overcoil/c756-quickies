@@ -42,11 +42,12 @@ This set relies heavily on [`jq`](https://stedolan.github.io/jq/) extensively. T
 
 ## Setup
 
-There are 6 variables you need to be concerned with of which only 2 are likely to require real attention (`KEY` and `LKEY`):
+There are 7 variables you need to be concerned with of which only 3 are likely to require real attention (`SGI`, `KEY` and `LKEY`):
 
 | variable | Note |
 | :-: | :-: |
 | `REGION` | The default value `us-west-2` should be used (for simplicity) as the included AMI ids (towards the end of the script) are specific to it. If you only need a few package, it's not inconceivable to look up the few AMI and add/redefine the packages. |
+| `SGI` | You may specify the security group (firewall rule) to use for your EC2 resources. This is a very good idea! You can either specify it directly here or indirectly in your `.bashrc`/`.zshrc` (via an export of `AWSA_SGI`) |
 | `KEY` | This is the name of public key as uploaded into AWS. You can either specify it directly here or indirectly in your `.bashrc`/`.zshrc` (via an export of `AWSA_REMOTE_KEY`) |
 | `LKEY` | This is the pathname of key pair as stored on your laptop. Again, you can either specify it directly here or indirectly in your `.bashrc`/`.zshrc` (via an export of `AWSA_LOCAL_KEYPAIR`) |
 | `PROFILE` | If you are using multiple profiles in your AWS CLI configuration, you can specify the particular profile the macro will use. Beware that `eksctl` cannot access non-default profiles. |
@@ -57,7 +58,7 @@ There are 6 variables you need to be concerned with of which only 2 are likely t
 
 For secure access to your resources, you can set your security group rule to restrict access of your EC2 instances down to a single IP (e.g., your home/office/current-location). See [here](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/authorizing-access-to-an-instance.html) for details. 
 
-The `awsa` macro set supports this scenario by adjusting the IP required as you move between locations or your home ISP IP address change from day-to-day. To use this feature, set a tag on your security group rules with a name of "scp-sync" (the value is ignored). The macros `sgrwfh` and `upwfh` reports on and synchronizes all tagged rules with your current IP address. 
+The `awsa` macro set supports this scenario by adjusting the IP required as you move between locations or your home ISP IP address change from day-to-day. To use this feature, set a tag on the security group rules (for instance, inside that supplied via `$SGI`) with a name of "scp-sync" (the value is ignored). The macros `sgrwfh` and `upwfh` displays and synchronizes all such tagged rules with your current IP address. 
 
 ## Details
 
