@@ -120,6 +120,10 @@ alias refaws='source ~/.aws-a'
 alias upaws='vi ~/.aws-a'
 
 
+# this is rather central
+NAMING_SVC=https://frightanic.com/goodies_content/docker-names.php
+
+
 # --------------
 # EC2
 
