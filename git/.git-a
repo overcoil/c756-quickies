@@ -1,7 +1,13 @@
 set +x
 
-# Convenient aliases for the aws cli
-# NB: These aliases use jq (https://stedolan.github.io/jq/) judiciously!
+# Convenient aliases for using/learning git
+#
+# Do *NOT* use these blindly. They are intended to be safe but you must
+#  know what you're doing. When in doubt, look up the manual to work out
+#  what's happening. I do that all the time...
+#
+
+echo "Use 'gita' or for a cheatsheet"
 
 if ! [ -x "$(command -v jq)" ]; then
   echo 'Warning: jq is not installed. Some macros will NOT operate!' >&2
@@ -15,8 +21,8 @@ alias refgit='source ~/.git-a'
 gita() {
     echo "git macro:"
     echo "  Commit: ga, gaa, gcom"
-    echo "  Branches: glsb, gcdb, gnewb, grmb"
-    echo "  Remotes: glsr, glink, grmr"
+    echo "  Branches: glsb, glsbl, gpwb, gcdb, gnewb, grmb"
+    echo "  Remotes: glsr, glsrl, glink, grmr"
     echo "  Stashes: glss"
     echo "  Tags: glst, gtag, grmt"
     echo "  Revert: grevertb, grevertf"
@@ -24,6 +30,7 @@ gita() {
     echo "  Misc: gconfig, ginfo"
     echo "  Reminder: init, clone, push, pull"
     echo "  Housekeeping: refgit, gita"
+    echo "Use 'which <macro>' or 'type <macro>' to review"
 }
 
 
@@ -64,6 +71,18 @@ glsr() {
 }
 
 
+# list of the remote "origin"'s branches
+# ref: https://stackoverflow.com/questions/171550/find-out-which-remote-branch-a-local-branch-is-tracking
+glsrl() {
+    git remote show origin
+}
+
+# alias to "long ls of branches" too
+glsbl() {
+    git remote show origin
+}
+
+
 # associate local repo with remote; default remote is origin
 glink() {
     if [[ $# -lt 1 ]]; then
@@ -96,10 +115,25 @@ grmr() {
 }
 
 
+# remove a file from the stage (don't commmit it)
+gsrm() {
+    if [[ $# -ne 1 ]]; then
+      echo "Usage: gsrm <file> [file2...]"
+    else
+      git reset HEAD $@
+    fi
+}
+
 
 # list of stashes
 glss() {
     git stash list
+}
+
+
+# current branch
+gpwb() {
+    git branch --show-current
 }
 
 
