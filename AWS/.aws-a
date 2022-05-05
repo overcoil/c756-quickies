@@ -42,12 +42,6 @@ SHUTDOWN_BEH=terminate
 # you will need to clean this up periodically 
 LOGD=~/.aws/logd
 
-# tags to apply to your EC2 instance
-# NB: mnemnonic-name & ssh-user are mandatory for erun/essh
-#     $MNAME and $SSH_USER are derived dynamically by erun/selectpkg
-#TAG_SPEC='ResourceType=instance,Tags=[{Key=mnemonic-name,Value='$MNAME'}, {Key=ssh-user,Value='$SSH_USER'}]'
-TAG_SPEC='ResourceType=instance,Tags=[{Key=mnemonic-name,Value='$MNAME'}, {Key=ssh-user,Value='$SSH_USER'}, {Key=course,Value='c756'}, {Key=bill-to,Value=self}]'
-
 # the following are used for maintaining custom IP security group rules
 CHECKIP=checkip.spdyn.de
 UPDATETS="`date "+Custom IP Updated: %Y-%m-%d %H:%M:%S"`"
@@ -62,6 +56,12 @@ UPDATETS="`date "+Custom IP Updated: %Y-%m-%d %H:%M:%S"`"
 
 # End configuration section
 #==============================
+
+# introduce the defaults
+
+AWSA_INSTANCE=invalid
+AWSA_IMAGE=invalid
+AWSA_SSH_USER=invalid
 
 
 # Table-of-content
@@ -185,20 +185,23 @@ epsa() {
 # Start up an EC2 instance with specification defined in chosen package.  
 #
 # NB: selectpkg() is implemented at the end of this script
+#     mnemnonic-name & ssh-user are mandatory tags for erun/essh
+
 #
 
 erun() {
+    
     selectpkg ${1}
 
     MNAME=`curl --silent $NAMING_SVC`
     set -x
     aws --profile $AWS_PROFILE --region $REGION --output json ec2 run-instances \
       --instance-initiated-shutdown-behavior $SHUTDOWN_BEH \
-      --tag-specifications $TAG_SPEC \
+      --tag-specifications 'ResourceType=instance,Tags=[{Key=mnemonic-name,Value='$MNAME'}, {Key=ssh-user,Value='$AWSA_SSH_USER'}, {Key=course,Value='c756'}, {Key=bill-to,Value=self}]' \
       --security-group-ids $SGI \
       --key-name $KEY \
-      --instance-type $INSTANCE \
-      --image-id $IMAGE > $LOGD/$MNAME.log
+      --instance-type $AWSA_INSTANCE \
+      --image-id $AWSA_IMAGE > $LOGD/$MNAME.log
     set +x
     echo $MNAME
 }
@@ -1037,33 +1040,33 @@ AMAZON_USER=ec2-user
 #
 selectpkg() {
     if [[ $# -eq 0 ]]; then
-      INSTANCE=$FREETIER
-      IMAGE=$AMI_UBUNTU20_X86
-      SSH_USER=$UBUNTU_USER
+      AWSA_INSTANCE=$FREETIER
+      AWSA_IMAGE=$AMI_UBUNTU20_X86
+      AWSA_SSH_USER=$UBUNTU_USER
     else
       case ${1} in
         "arm")
-          INSTANCE=$FREETIER_ARM
-          IMAGE=$AMI_UBUNTU20_ARM
-          SSH_USER=$UBUNTU_USER
+          AWSA_INSTANCE=$FREETIER_ARM
+          AWSA_IMAGE=$AMI_UBUNTU20_ARM
+          AWSA_SSH_USER=$UBUNTU_USER
           ;;
 
         "gpu_small")
-          INSTANCE=$GPU_ML_X
-          IMAGE=$AMI_AMAZON_LINUX_ML
-          SSH_USER=$AMAZON_USER
+          AWSA_INSTANCE=$GPU_ML_X
+          AWSA_IMAGE=$AMI_AMAZON_LINUX_ML
+          AWSA_SSH_USER=$AMAZON_USER
           ;;
 
         "agpu_small")
-          INSTANCE=$GPU_ML_2X_ARM
-          IMAGE=$AMI_UBUNTU_ML_ARM
-          SSH_USER=$UBUNTU_USER
+          AWSA_INSTANCE=$GPU_ML_2X_ARM
+          AWSA_IMAGE=$AMI_UBUNTU_ML_ARM
+          AWSA_SSH_USER=$UBUNTU_USER
           ;;
 
         *)
-          INSTANCE=invalid
-          IMAGE=invalid
-          SSH_USER=invalid
+          AWSA_INSTANCE=invalid
+          AWSA_IMAGE=invalid
+          AWSA_SSH_USER=invalid
           ;;
       esac
     fi
