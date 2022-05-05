@@ -46,6 +46,22 @@ LOGD=~/.aws/logd
 CHECKIP=checkip.spdyn.de
 UPDATETS="`date "+Custom IP Updated: %Y-%m-%d %H:%M:%S"`"
 
+# for cost explorer
+# TODO: this doesn't handle leap years!
+MONTHTODATE="`date "+Start=%Y-%m-01,End=%Y-%m-%d"`"
+CURJAN="`date "+Start=%Y-01-01,End=%Y-01-31"`"
+CURFEB="`date "+Start=%Y-02-01,End=%Y-02-28"`"
+CURMAR="`date "+Start=%Y-03-01,End=%Y-03-31"`"
+CURAPR="`date "+Start=%Y-04-01,End=%Y-04-30"`"
+CURMAY="`date "+Start=%Y-05-01,End=%Y-05-31"`"
+CURJUN="`date "+Start=%Y-06-01,End=%Y-06-30"`"
+CURJUL="`date "+Start=%Y-07-01,End=%Y-07-31"`"
+CURAUG="`date "+Start=%Y-08-01,End=%Y-08-31"`"
+CURSEP="`date "+Start=%Y-09-01,End=%Y-09-30"`"
+CUROCT="`date "+Start=%Y-10-01,End=%Y-10-31"`"
+CURNOV="`date "+Start=%Y-11-01,End=%Y-11-30"`"
+CURDEC="`date "+Start=%Y-12-01,End=%Y-12-31"`"
+
 #
 # Tag your custom-IP ssh security-group-rules with 'scp-sync' to enable auto-update of the custom IP.
 # 
@@ -72,6 +88,7 @@ awsa() {
     echo "  EC2: eps/eps[lga], erun, essh, ekn, ecat, etags, etag, ermtag"
     echo "    x86 packages: default, gpu_small"
     echo "    ARM packages: arm, agpu_small"
+    echo "  Cost: acost"
     echo "  Service Quota: esqa, esq"
     echo "  S3: s3ls, s3lsr, s3cp, s3mv, s3rm"
     echo "  C* (Keyspaces): casls, caslst"
@@ -310,6 +327,63 @@ ermtag() {
     else
       aws --profile $AWS_PROFILE --region $REGION ec2 delete-tags --resources ${1} --tag Key=${2}
     fi
+}
+
+
+# --------------
+# Cost Explorer
+
+# ref: https://docs.aws.amazon.com/cli/latest/reference/ce/get-cost-and-usage.html
+acostm() {
+    if [[ $# -eq 0 ]]; then
+      PERIOD=$MONTHTODATE
+    else
+      case ${1} in
+        1)
+          PERIOD=$CURJAN
+          ;;
+        2)
+          PERIOD=$CURFEB
+          ;;
+        3)
+          PERIOD=$CURMAR
+          ;;
+        4)
+          PERIOD=$CURAPR
+          ;;
+        5)
+          PERIOD=$CURMAY
+          ;;
+        6)
+          PERIOD=$CURJUN
+          ;;
+        7)
+          PERIOD=$CURJUL
+          ;;
+        8)
+          PERIOD=$CURAUG
+          ;;
+        9)
+          PERIOD=$CURSEP
+          ;;
+        10)
+          PERIOD=$CUROCT
+          ;;
+        11)
+          PERIOD=$CURNOV
+          ;;
+        12)
+          PERIOD=$CURDEC
+          ;;
+      esac
+    fi
+    aws --profile $AWS_PROFILE --region $REGION --output json ce get-cost-and-usage \
+      --time-period $PERIOD \
+      --granularity MONTHLY \
+      --metrics "BlendedCost" "UsageQuantity" \
+      --group-by Type=DIMENSION,Key=SERVICE
+# Type=TAG,Key=Environment | \
+#    jq -r ".ResultsByTime[]| .TimePeriod.Start, .Groups"
 }
 
 
